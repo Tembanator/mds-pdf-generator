@@ -7,11 +7,17 @@ import {
   StyleSheet,
   Image,
 } from "@react-pdf/renderer";
+import { SettingsData } from "@/Lib/types";
 
 const styles = StyleSheet.create({
-  page: { padding: 50, fontFamily: "Helvetica", fontSize: 11, lineHeight: 1.5 },
+  page: {
+    padding: 50,
+    fontFamily: "Times-Roman",
+    fontSize: 11,
+    lineHeight: 1.5,
+  },
   header: { alignItems: "center", marginBottom: 20 },
-  schoolName: { fontSize: 18, fontFamily: "Helvetica-Bold", marginBottom: 5 },
+  schoolName: { fontSize: 18, fontFamily: "Times-Bold", marginBottom: 5 },
   contactRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -19,7 +25,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   horizontalRule: {
-    borderBottomWidth: 2,
+    borderBottomWidth: 1,
     borderBottomColor: "#000",
     marginVertical: 10,
   },
@@ -27,12 +33,12 @@ const styles = StyleSheet.create({
   subject: {
     textAlign: "center",
     textDecoration: "underline",
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Times-Bold",
     marginVertical: 20,
   },
   paymentInfo: {
     marginTop: 30,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Times-Bold",
   },
   signatureSection: {
     marginTop: 40,
@@ -60,9 +66,11 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
   underline: {
+    paddingBottom: 0,
     borderBottomWidth: 0.5,
     borderBottomColor: "#000",
     textAlign: "center",
+    fontFamily: "Times-Bold",
   },
   inlineContainer: {
     flexDirection: "row",
@@ -74,39 +82,60 @@ const styles = StyleSheet.create({
 interface Learner {
   name: string;
   owing: number;
-  date?: string;
-  classstream?: string;
-  reminder?: number;
 }
 
 interface LetterPageProps {
   learner: Learner;
+  settings: SettingsData;
 }
 
 interface BalanceTableProps {
   learners: Learner[];
+  settings: SettingsData;
 }
 
-const LetterPage = ({ learner }: LetterPageProps) => (
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+};
+
+function getOrdinalSuffix(n: string): string {
+  const num = parseInt(n, 10);
+  if (isNaN(num)) return "";
+  const mod100 = num % 100;
+
+  if (mod100 >= 11 && mod100 <= 13) {
+    return "th";
+  }
+
+  switch (num % 10) {
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    default:
+      return "th";
+  }
+}
+
+const LetterPage = ({ learner, settings }: LetterPageProps) => (
   <Page size="A4" style={styles.page}>
     <View style={styles.header}>
-      <Text style={styles.schoolName}>MATER DOLOROSA HIGH SCHOOL</Text>
-      <View style={styles.contactRow}>
-        <View>
-          <Text>P. O. BOX 62</Text>
-          <Text>MBABANE H100</Text>
-        </View>
-        <Image style={{ width: 60, height: 60 }} src="/letterhead.png" />
-        <View>
-          <Text>CELL: 76332667</Text>
-        </View>
-      </View>
+      <Image style={{ width: 400, height: 100 }} src="/letterhead.png" />
     </View>
 
     <View style={styles.horizontalRule} />
 
     <View style={styles.content}>
-      <Text>{learner.date || "29th January 2026"}</Text>
+      <Text style={{ fontFamily: "Times-Bold" }}>
+        {formatDate(settings.selectedDate)}
+      </Text>
       <Text style={{ marginTop: 10 }}>Praise be Jesus Christ!</Text>
       <Text style={{ marginTop: 20 }}>Dear Parents/Guardians</Text>
 
@@ -114,15 +143,11 @@ const LetterPage = ({ learner }: LetterPageProps) => (
 
       <View style={styles.inlineContainer}>
         <Text>You, the parent to </Text>
-        <Text style={[styles.underline, { width: 150 }]}>{learner.name}</Text>
+        <Text style={[styles.paymentInfo]}>{learner.name}</Text>
         <Text> in Form </Text>
-        <Text style={[styles.underline, { width: 40 }]}>
-          {learner.classstream || "___"}
-        </Text>
+        <Text style={[styles.paymentInfo]}>{settings.classroom}</Text>
         <Text> are kindly requested to settle the amount of E </Text>
-        <Text style={[styles.underline, { width: 60 }]}>
-          {learner.owing.toFixed(2)}
-        </Text>
+        <Text style={[styles.paymentInfo]}>{learner.owing.toFixed(2)}</Text>
         <Text> being outstanding school fees.</Text>
       </View>
 
@@ -132,8 +157,10 @@ const LetterPage = ({ learner }: LetterPageProps) => (
         <Text>SCHOOL ACCOUNT NUMBER: 20000025365</Text>
       </View>
 
-      <Text style={{ marginTop: 20 }}>
-        This is reminder number {learner.reminder || "1st"} in 2026.
+      <Text style={{ marginTop: 20, fontFamily: "Times-Bold" }}>
+        This is the {settings.reminders}
+        {getOrdinalSuffix(settings.reminders)} reminder in{" "}
+        {formatDate(settings.selectedDate).slice(-4)}.
       </Text>
       <Text style={{ marginTop: 20 }}>
         Thank you in advance for your cooperation.
@@ -143,19 +170,19 @@ const LetterPage = ({ learner }: LetterPageProps) => (
 
     <View style={styles.signatureSection}>
       <View>
-        <Text style={{ marginTop: 20, fontStyle: "italic" }}>[Signed]</Text>
-        <Text style={{ fontFamily: "Helvetica-Bold", marginTop: 5 }}>
-          F. J. NDLOVU
+        <Image style={{ width: 70, height: 20 }} src="/letterhead.png" />
+        <Text style={{ fontFamily: "Times-Bold", marginTop: 5 }}>
+          S. V. NXUMALO
         </Text>
         <Text>Principal</Text>
       </View>
       <View style={styles.stamp}>
-        <Text style={{ fontFamily: "Helvetica-Bold" }}>
+        <Text style={{ fontFamily: "Times-Bold" }}>
           MATER DOLOROSA HIGH SCHOOL
         </Text>
         <Text>P.O.Box 62, Mbabane H100</Text>
         <Text>Tel: (+268) 2404 3082</Text>
-        <Text style={{ marginTop: 10, fontFamily: "Helvetica-Bold" }}>
+        <Text style={{ marginTop: 10, fontFamily: "Times-Bold" }}>
           PRINCIPAL
         </Text>
       </View>
@@ -167,10 +194,10 @@ const LetterPage = ({ learner }: LetterPageProps) => (
   </Page>
 );
 
-const BulkSchoolLetters = ({ learners }: BalanceTableProps) => (
+const BulkSchoolLetters = ({ learners, settings }: BalanceTableProps) => (
   <Document>
     {learners?.map((student, index) => (
-      <LetterPage key={index} learner={student} />
+      <LetterPage key={index} learner={student} settings={settings} />
     ))}
   </Document>
 );
